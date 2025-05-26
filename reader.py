@@ -1,5 +1,5 @@
 import os
-from collections import defaultdict
+from collections import defaultdict, UserList
 import json
 
 video_sent_attr = ["timestamp","session_id","index","expt_id","channel","video_ts","format","size","ssim_index","cwnd","in_flight","min_rtt","rtt","delivery_rate"]
@@ -10,9 +10,9 @@ class Reader:
     def __init__(self,data_folder:str="./data"):
         self.data_folder = data_folder
         self.scheme = defaultdict(defaultdict)
-        self.sent_chunks = list(defaultdict)
-        self.buffer_level = list(defaultdict)
-        self.acked_chunks = list(defaultdict)
+        self.sent_chunks = [defaultdict]
+        self.buffer_level = [defaultdict]
+        self.acked_chunks = [defaultdict]
 
         self.load_scheme()
         self.load_video_acked()
@@ -54,4 +54,4 @@ class Reader:
         return self.scheme[expt_id]
 if __name__ == "__main__":
     reader = Reader()
-    print(reader.scheme['1'].keys())
+    print(reader.buffer_level)
