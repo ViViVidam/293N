@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict, UserList
 import json
+import pandas as pd
 
 video_sent_attr = ["timestamp","session_id","index","expt_id","channel","video_ts","format","size","ssim_index","cwnd","in_flight","min_rtt","rtt","delivery_rate"]
 buffer_attr = ["timestamp","session_id","index","expt_id","channel","event","buffer","cum_rebuf"]
@@ -10,9 +11,9 @@ class Reader:
     def __init__(self,data_folder:str="./data"):
         self.data_folder = data_folder
         self.scheme = defaultdict(defaultdict)
-        self.sent_chunks = [defaultdict]
-        self.buffer_level = [defaultdict]
-        self.acked_chunks = [defaultdict]
+        self.sent_chunks = []
+        self.buffer_level = []
+        self.acked_chunks = []
 
         self.load_scheme()
         self.load_video_acked()
@@ -52,6 +53,68 @@ class Reader:
 
     def get_exp_setting(self,expt_id:str)->defaultdict:
         return self.scheme[expt_id]
+
+        
+    def analyze(self):
+        df_sent = pd.DataFrame(self.sent_chunks)
+        df_acked = pd.DataFrame(self.acked_chunks)
+        df_buf  = pd.DataFrame(self.buffer_level)
+
+
+        for df, dtypes in [
+        (df_sent, {"timestamp": int, "size": int, "video_ts": int}),
+        (df_acked, {"timestamp": int, "video_ts": int}),
+        (df_buf,  {"timestamp": int, "buffer": float, "cum_rebuf": float})]:
+            for col, typ in dtypes.items():
+                df[col] = df[col].astype(typ)
+
+        for df in (df_sent, df_acked, df_buf):
+            df["session_id"] = df["session_id"].astype(str)
+
+
+        group_keys = ["expt_id", "session_id"]
+
+        total_rebuf = (
+            df_buf
+            .groupby(group_keys)["cum_rebuf"]
+            .max()
+            .rename("total_rebuf_s")
+        )
+
+        acked_counts = (
+            df_acked
+            .groupby(group_keys)
+            .size()
+            .rename("n_acked_chunks")
+        )
+
+        played_time = (acked_counts * 2.002).rename("played_time_s")
+
+        df_sent["bitrate_bps"] = df_sent["size"] * 8 / 2.002
+
+        avg_bitrate = (
+            df_sent
+            .groupby(group_keys)["bitrate_bps"]
+            .mean()
+            .rename("avg_bitrate_bps")
+        )
+
+        df_sent = df_sent.sort_values(group_keys + ["index"])
+        df_sent["delta_bps"] = (
+            df_sent
+            .groupby(group_keys)["bitrate_bps"]
+            .diff()
+            .fillna(0)
+        )
+
+        summary = (
+            pd.concat([total_rebuf, played_time, avg_bitrate, acked_counts], axis=1)
+            .reset_index()
+        )
+
+        summary = summary.sort_values(["expt_id", "session_id"])
+        print(summary)
+
 if __name__ == "__main__":
     reader = Reader()
-    print(reader.buffer_level)
+    reader.analyze()
