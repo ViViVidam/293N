@@ -114,6 +114,7 @@ class Reader:
 
         summary = summary.sort_values(["expt_id", "session_id"])
         print(summary)
+        return summary
 
 if __name__ == "__main__":
     reader = Reader()
