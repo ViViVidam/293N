@@ -108,9 +108,10 @@ class Reader:
             .diff()
             .fillna(0)
         )
+        pct_rebuf = (total_rebuf / played_time * 100).rename("pct_rebuf_played")
 
         summary = (
-            pd.concat([total_rebuf, played_time, avg_bitrate, acked_counts], axis=1)
+            pd.concat([total_rebuf, played_time, avg_bitrate, acked_counts, pct_rebuf], axis=1)
             .reset_index()
         )
 
@@ -122,14 +123,14 @@ class Reader:
         plt.figure()
         for expt_id, group in summary.groupby("expt_id"):
             plt.scatter(
-                group["total_rebuf_s"],
+                group["pct_rebuf_played"],
                 group["avg_bitrate_bps"],
                 label=f"{self.scheme[expt_id]["abr"]}"
             )
 
-        plt.xlabel("Total Rebuffering (s)")
+        plt.xlabel("% Rebuffering")
         plt.ylabel("Average Bitrate (bps)")
-        plt.title("Total Rebuffering vs. Average Bitrate Across Experiments")
+        plt.title("% Rebuffering vs. Average Bitrate Across ABRs")
         plt.legend()
         plt.show()
 if __name__ == "__main__":
