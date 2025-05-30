@@ -2,6 +2,8 @@ import os
 from collections import defaultdict, UserList
 import json
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 video_sent_attr = ["timestamp","session_id","index","expt_id","channel","video_ts","format","size","ssim_index","cwnd","in_flight","min_rtt","rtt","delivery_rate"]
 buffer_attr = ["timestamp","session_id","index","expt_id","channel","event","buffer","cum_rebuf"]
@@ -114,7 +116,23 @@ class Reader:
 
         summary = summary.sort_values(["expt_id", "session_id"])
         print(summary)
+        return summary
 
+    def plotGraphs(self, summary):
+        plt.figure()
+        for expt_id, group in summary.groupby("expt_id"):
+            plt.scatter(
+                group["total_rebuf_s"],
+                group["avg_bitrate_bps"],
+                label=f"{self.scheme[expt_id]["abr"]}"
+            )
+
+        plt.xlabel("Total Rebuffering (s)")
+        plt.ylabel("Average Bitrate (bps)")
+        plt.title("Total Rebuffering vs. Average Bitrate Across Experiments")
+        plt.legend()
+        plt.show()
 if __name__ == "__main__":
     reader = Reader()
-    reader.analyze()
+    summary = reader.analyze()
+    reader.plotGraphs(summary)
