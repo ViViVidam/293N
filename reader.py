@@ -132,7 +132,7 @@ class Reader:
         plt.ylabel("Average Bitrate (bps)")
         plt.title("% Rebuffering vs. Average Bitrate Across ABRs")
         plt.legend()
-        plt.show()        print(summary.keys())
+        plt.show()   
         return summary
 
 if __name__ == "__main__":
