@@ -125,7 +125,7 @@ class Reader:
             plt.scatter(
                 group["pct_rebuf_played"],
                 group["avg_bitrate_bps"],
-                label=f"{self.scheme[expt_id]["abr"]}"
+                label=f"{self.scheme[expt_id]['abr']}"
             )
 
         plt.xlabel("% Rebuffering")
