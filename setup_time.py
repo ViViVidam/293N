@@ -13,16 +13,16 @@ def reformat_scheme(reader:Reader)->Dict[dict,str]:
     return datas
 if __name__ == '__main__':
     reader = Reader()
-    stream_init = defaultdict(lambda: defaultdict(list))
-    stream_startup = defaultdict(lambda: defaultdict(list))
+    stream_init = defaultdict(list)
+    stream_startup = defaultdict(list)
 
     for item in reader.buffer_level:
         if item["event"] == "init":
-            session_id, index = item["session_id"],item["index"]
-            stream_init[session_id][index].append(int(item["timestamp"]))
+            session_id = item["session_id"]
+            stream_init[session_id].append(int(item["timestamp"]))
         elif item["event"] == "startup":
-            session_id, index = item["session_id"],item["index"]
-            stream_startup[session_id][index].append(int(item["timestamp"]))
+            session_id = item["session_id"]
+            stream_startup[session_id].append(int(item["timestamp"]))
         int(item["timestamp"])
     # each session use one ABR algorithm
 
@@ -40,12 +40,11 @@ if __name__ == '__main__':
     x = []
     y = []
     for session in stream_init.keys():
-        for index in stream_startup[session].keys():
-            for idx in len(stream_startup[session][index]):
-                startup_delay = stream_startup[session][index][idx] - stream_init[session][index][idx]
-                assert(startup_delay > 0)
-                x.append(startup_delay)
-                y.append(sess2abr[session])
+        for idx in range(len(stream_startup[session])):
+            startup_delay = stream_startup[session][idx] - stream_init[session][idx]
+            assert(startup_delay > 0)
+            x.append(startup_delay)
+            y.append(sess2abr[session])
     sns.boxplot(x=x,y=y)
     plt.show()
 # session, index -> exp_settings, channel, qualitys

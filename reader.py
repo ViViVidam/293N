@@ -10,7 +10,7 @@ buffer_attr = ["timestamp","session_id","index","expt_id","channel","event","buf
 video_acked_attr = ["timestamp","session_id","index","expt_id","channel","video_ts"]
 
 class Reader:
-    def __init__(self,data_folder:str="./data"):
+    def __init__(self,data_folder:str="./data/fugu_bbr_exp/"):
         self.data_folder = data_folder
         self.scheme = defaultdict(defaultdict)
         self.sent_chunks = []
@@ -23,10 +23,19 @@ class Reader:
         self.load_buffer_level()
     def load_scheme(self):
         exp_settings_path = os.path.join(self.data_folder, "logs")
+        if os.path.exists(os.path.join(exp_settings_path, "expt_settings") is False):
+            dirname = os.path.dirname(self.data_folder)
+            abr, cc, _ = dirname.split("_")
+            self.scheme['1'] = {'cc':cc,'abr':abr}
+            return 0
         with open(os.path.join(exp_settings_path, "expt_settings")) as f:
             for line in f.readlines():
                 scheme_id, setting = line.strip().split(" ",maxsplit=1)
+                setting = json.loads(setting)
+                if "abr" not in setting.keys():
+                    continue
                 self.scheme[scheme_id] = json.loads(setting)
+        return 1
 
     def load_video_acked(self):
         for filename in os.listdir(self.data_folder):
@@ -34,7 +43,9 @@ class Reader:
                 with open(os.path.join(self.data_folder, filename)) as f:
                     for line in f.readlines()[1:]:
                         stat = line.strip().split(',')
-                        self.acked_chunks.append({attr:st for attr,st in zip(video_acked_attr,stat)})
+                        #self.acked_chunks.append({attr:st for attr,st in zip(video_acked_attr,stat)})
+                        timestamp, channel, expt_id, session_id,video_st = stat[0], stat[1], stat[2], stat[-2], stat[7]
+                        self.acked_chunks.append({"timestamp":timestamp,"channel":channel,"expt_id":expt_id,"session_id":session_id,"video_ts":video_st})
 
     def load_video_sent(self):
         for filename in os.listdir(self.data_folder):
@@ -42,7 +53,15 @@ class Reader:
                 with open(os.path.join(self.data_folder, filename)) as f:
                     for line in f.readlines()[1:]:
                         stat = line.strip().split(',')
-                        self.sent_chunks.append({attr:st for attr,st in zip(video_sent_attr,stat)})
+                        #self.sent_chunks.append({attr:st for attr,st in zip(video_sent_attr,stat)})
+                        timestamp, channel, session_id, expt_id, video_ts = stat[0], stat[1], stat[-2], stat[2], stat[7]
+                        self.sent_chunks.append({attr:st for attr,st in zip(video_sent_attr[-8:],stat[8:16])})
+                        self.sent_chunks[-1]["timestamp"] = timestamp
+                        self.sent_chunks[-1]["session_id"] = session_id
+                        self.sent_chunks[-1]["expt_id"] = expt_id
+                        self.sent_chunks[-1]["channel"] = channel
+                        self.sent_chunks[-1]["video_ts"] = video_ts
+                        #print(self.sent_chunks[-1])
 
         # video_sent_path = os.path.join(self.data_folder, "video_sent")
     def load_buffer_level(self):
@@ -51,7 +70,10 @@ class Reader:
                 with open(os.path.join(self.data_folder, filename)) as f:
                     for line in f.readlines()[1:]:
                         stat = line.strip().split(',')
-                        self.buffer_level.append({attr:st for attr,st in zip(buffer_attr,stat)})
+                        session_id, timestamp, expt_id, event, channel, buffer, cum_rebuf = stat[-2], stat[0],stat[2],stat[3], stat[1], stat[8], stat[9]
+                        self.buffer_level.append({"buffer":buffer,"timestamp":timestamp,"expt_id":expt_id,"event":event,"channel":channel,"cum_rebuf":cum_rebuf,"session_id":session_id})
+                        print(self.buffer_level[-1])
+                        #self.buffer_level.append({attr:st for attr,st in zip(buffer_attr,stat)})
 
     def get_exp_setting(self,expt_id:str)->defaultdict:
         return self.scheme[expt_id]
@@ -101,7 +123,7 @@ class Reader:
             .rename("avg_bitrate_bps")
         )
 
-        df_sent = df_sent.sort_values(group_keys + ["index"])
+        df_sent = df_sent.sort_values(group_keys + ["channel"])
         df_sent["delta_bps"] = (
             df_sent
             .groupby(group_keys)["bitrate_bps"]
@@ -121,7 +143,9 @@ class Reader:
 
     def plotGraphs(self, summary):
         plt.figure()
+
         for expt_id, group in summary.groupby("expt_id"):
+            print(expt_id)
             plt.scatter(
                 group["pct_rebuf_played"],
                 group["avg_bitrate_bps"],
