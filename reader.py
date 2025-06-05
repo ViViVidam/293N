@@ -24,9 +24,13 @@ class Reader:
     def load_scheme(self):
         exp_settings_path = os.path.join(self.data_folder, "logs")
         if os.path.exists(os.path.join(exp_settings_path, "expt_settings") is False):
-            dirname = os.path.dirname(self.data_folder)
+            if self.data_folder[-1] == "/":
+                s = self.data_folder[:-1].split("/")
+            else:
+                s = self.data_folder.split("/")
+            dirname = s[-1]
             abr, cc, _ = dirname.split("_")
-            self.scheme['1'] = {'cc':cc,'abr':abr}
+            self.scheme['1'] = {'expt_id':1,'cc':cc,'abr':abr}
             return 0
         with open(os.path.join(exp_settings_path, "expt_settings")) as f:
             for line in f.readlines():
@@ -72,7 +76,7 @@ class Reader:
                         stat = line.strip().split(',')
                         session_id, timestamp, expt_id, event, channel, buffer, cum_rebuf = stat[-2], stat[0],stat[2],stat[3], stat[1], stat[8], stat[9]
                         self.buffer_level.append({"buffer":buffer,"timestamp":timestamp,"expt_id":expt_id,"event":event,"channel":channel,"cum_rebuf":cum_rebuf,"session_id":session_id})
-                        print(self.buffer_level[-1])
+                        #print(self.buffer_level[-1])
                         #self.buffer_level.append({attr:st for attr,st in zip(buffer_attr,stat)})
 
     def get_exp_setting(self,expt_id:str)->defaultdict:
