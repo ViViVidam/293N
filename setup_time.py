@@ -83,10 +83,14 @@ if __name__ == '__main__':
     # each session use one ABR algorithm
 
 
-
+    x = [i/1000 for i in x]
 
     #print(y)
-    sns.boxplot(x=x,y=y)
+    plot = sns.boxplot(x=y,y=x)
+    plt.ylabel("Time (ms)")
+    plt.xlabel("ABR algorithm")
     plt.show()
+    plt.draw()
+    plot.get_figure().savefig('setup_delay.png')
 # session, index -> exp_settings, channel, qualitys
 # x:ABR y:StartUp time
