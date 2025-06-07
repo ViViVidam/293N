@@ -127,6 +127,20 @@ class Reader:
             .rename("avg_bitrate_bps")
         )
 
+        std_bitrate = (
+            df_sent
+            .groupby(group_keys)["bitrate_bps"]
+            .std()
+            .rename("std_bitrate_bps")
+        )
+        
+        std_latency = (
+            df_sent
+            .groupby(group_keys)["rtt"]
+            .std()
+            .rename("std_latency")
+        )
+
         df_sent = df_sent.sort_values(group_keys + ["channel"])
         df_sent["delta_bps"] = (
             df_sent
@@ -137,12 +151,11 @@ class Reader:
         pct_rebuf = (total_rebuf / played_time * 100).rename("pct_rebuf_played")
 
         summary = (
-            pd.concat([total_rebuf, played_time, avg_bitrate, acked_counts, pct_rebuf], axis=1)
+            pd.concat([total_rebuf, played_time, avg_bitrate, acked_counts, pct_rebuf, std_bitrate, std_latency], axis=1)
             .reset_index()
         )
 
         summary = summary.sort_values(["expt_id", "session_id"])
-        print(summary)
         return summary
 
     def plotGraphs(self, summary):
