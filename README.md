@@ -16,3 +16,4 @@ Run setup_time.py will generate the corresponding graph.
 `./download_data.sh`
 
 2. Run the jupyter notebook (`graphs.ipynb`) and run all cells. Graphs will be automatically produced.
+3. Run the `setup_time.py` will generate a setup latency graph.
