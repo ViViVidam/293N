@@ -155,26 +155,37 @@ class Reader:
             .reset_index()
         )
 
+        df_sent["format"] = df_sent["format"].astype(str).str[:-3]
+
+        fmt_lookup = (
+            df_sent[["expt_id", "session_id", "format"]]
+            .drop_duplicates()                   
+        )
+
+        summary = (
+            summary
+            .merge(fmt_lookup, on=["expt_id", "session_id"], how="left")
+            .sort_values(["expt_id", "session_id"])
+        )
+
         summary = summary.sort_values(["expt_id", "session_id"])
+        print(summary)
         return summary
 
     def plotGraphs(self, summary):
-        plt.figure()
-
-        for expt_id, group in summary.groupby("expt_id"):
-            print(expt_id)
+        for fmt, group in summary.groupby("format"):
+            plt.figure()
             plt.scatter(
                 group["pct_rebuf_played"],
                 group["avg_bitrate_bps"],
-                label=f"{self.scheme[expt_id]['abr']}"
+                label="Linear BBA"
             )
-
-        plt.xlabel("% Rebuffering")
-        plt.ylabel("Average Bitrate (bps)")
-        plt.title("% Rebuffering vs. Average Bitrate Across ABRs")
-        plt.legend()
-        plt.show()   
-        return summary
+            plt.xlabel("% Rebuffering")
+            plt.ylabel("Average Bitrate (bps)")
+            plt.title(f"% Rebuffering vs. Average Bitrate — format: {fmt}")
+            plt.tight_layout()
+            plt.legend()
+            plt.show()
 
 class OldReader:
     def __init__(self,data_folder:str="./data"):
